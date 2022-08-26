@@ -3,6 +3,8 @@ package orderRepo;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
@@ -24,8 +26,22 @@ class OrderController {
     }
 
     @PostMapping(controllerPath)
-    OrderDetails newUser(@RequestBody OrderDetails order) {
-        return repository.save(order);
+    OrderDetails newOrder(@RequestBody OrderDetails order) {
+        Long userId = order.getUserId();
+        RestTemplate restTemplate = new RestTemplate();
+        User user = null;
+        try {
+            user = restTemplate.getForEntity("http://localhost:8080/users/" + userId, User.class).getBody();
+            return repository.save(order);
+        } catch (HttpClientErrorException e) {
+            HttpStatus status = e.getStatusCode();
+            if(status == HttpStatus.NOT_FOUND)
+                throw new UserNotFoundException(userId);
+            else
+                throw new InternalServerError("Some error occurred");
+        } catch (Exception e) {
+            throw new InternalServerError("Some error occurred");
+        }
     }
 
 

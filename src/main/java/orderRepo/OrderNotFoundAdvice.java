@@ -15,4 +15,18 @@ class OrderNotFoundAdvice {
 	String productNotFoundHandler(OrderNotFoundException ex) {
 		return ex.getMessage();
 	}
+
+	@ResponseBody
+	@ExceptionHandler(UserNotFoundException.class)
+	@ResponseStatus(HttpStatus.BAD_REQUEST)
+	String userNotFoundHandler(UserNotFoundException ex) {
+		return ex.getMessage();
+	}
+
+	@ResponseBody
+	@ExceptionHandler(InternalServerError.class)
+	@ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+	String error(Exception ex) {
+		return ex.getMessage();
+	}
 }
