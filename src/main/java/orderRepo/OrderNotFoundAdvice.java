@@ -1,4 +1,4 @@
-package productRepo;
+package orderRepo;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -7,12 +7,12 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ControllerAdvice
-class ProductNotFoundAdvice {
+class OrderNotFoundAdvice {
 
 	@ResponseBody
-	@ExceptionHandler(ProductNotFoundException.class)
+	@ExceptionHandler(OrderNotFoundException.class)
 	@ResponseStatus(HttpStatus.NOT_FOUND)
-	String productNotFoundHandler(ProductNotFoundException ex) {
+	String productNotFoundHandler(OrderNotFoundException ex) {
 		return ex.getMessage();
 	}
 }

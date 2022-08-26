@@ -1,27 +1,30 @@
-package productRepo;
+package orderRepo;
 
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import java.util.Map;
 import java.util.Objects;
 
 @Entity
-class Product {
+class OrderDetails {
 
     private @Id
     @GeneratedValue Long id;
     private Long userId;
+    @ElementCollection
+    private Map<Long, Long> orderItems;
     private String shippingAddress;
     private float totalAmount;
-    private Long[] productIds;
 
-    Product() {
+    OrderDetails() {
     }
 
-    public Product(String shippingAddress, float totalAmount, Long[] productIds, Long userId) {
+    public OrderDetails(String shippingAddress, float totalAmount, Map<Long, Long> orderItems, Long userId) {
         this.shippingAddress = shippingAddress;
         this.totalAmount = totalAmount;
-        this.productIds = productIds;
+        this.orderItems = orderItems;
         this.userId = userId;
     }
 
@@ -33,12 +36,12 @@ class Product {
         this.userId = userId;
     }
 
-    public Long[] getProductIds() {
-        return productIds;
+    public Map<Long, Long> getOrderItems() {
+        return orderItems;
     }
 
-    public void setProductIds(Long[] productIds) {
-        this.productIds = productIds;
+    public void setOrderItems(Map<Long, Long> orderItems) {
+        this.orderItems = orderItems;
     }
 
     public Long getId() {
@@ -64,10 +67,10 @@ class Product {
 
         if (this == o)
             return true;
-        if (!(o instanceof Product))
+        if (!(o instanceof OrderDetails))
             return false;
-        Product product = (Product) o;
-        return Objects.equals(this.id, product.id) && Objects.equals(this.shippingAddress, product.shippingAddress);
+        OrderDetails order = (OrderDetails) o;
+        return Objects.equals(this.id, order.id) && Objects.equals(this.shippingAddress, order.shippingAddress);
     }
 
     public float getTotalAmount() {
@@ -85,6 +88,6 @@ class Product {
 
     @Override
     public String toString() {
-        return "Product{" + "id=" + this.id + ", name='" + this.shippingAddress + '\'' +  ", price='" + this.totalAmount;
+        return "Order{" + "id=" + this.id + ", name='" + this.shippingAddress + '\'' + ", price='" + this.totalAmount + "}";
     }
 }
