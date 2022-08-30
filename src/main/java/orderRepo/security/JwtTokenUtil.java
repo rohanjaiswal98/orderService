@@ -1,6 +1,7 @@
 package orderRepo.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Value;
@@ -70,7 +71,8 @@ public class JwtTokenUtil implements Serializable {
 	}
 
 	public Boolean validateToken(String token, UserDetails userDetails) {
-		final String username = getUsernameFromToken(token);
-		return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+//		final String username = getUsernameFromToken(token);
+		return Jwts.parser().isSigned(token);
+//		return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
 	}
 }
