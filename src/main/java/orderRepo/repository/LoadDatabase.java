@@ -7,6 +7,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
@@ -16,7 +17,8 @@ class LoadDatabase {
 
 	@Bean
 	CommandLineRunner initDatabase(OrderRepository repository) {
-		Map<Long, Long> productIds = Map.of(1L, 2L);
+		Map<Long, Long> productIds = new HashMap<>();
+		productIds.put(1L, 2L);
 
 		return args -> {
 			log.info("Preloading " + repository.save(new OrderDetails("Product 1", 99, productIds, 1L)));
