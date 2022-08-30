@@ -1,4 +1,4 @@
-package orderRepo;
+package orderRepo.exceptions;
 
 public class InternalServerError extends RuntimeException {
     public InternalServerError() {

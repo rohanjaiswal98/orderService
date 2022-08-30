@@ -1,4 +1,4 @@
-package orderRepo;
+package orderRepo.model;
 
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Objects;
 
 @Entity
-class OrderDetails {
+public class OrderDetails {
 
     private @Id
     @GeneratedValue Long id;

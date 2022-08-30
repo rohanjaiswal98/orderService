@@ -1,12 +1,8 @@
-package orderRepo;
+package orderRepo.model;
 
 import java.util.Objects;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-
-class User {
+public class User {
 
 	private Long id;
 	private String name;
