@@ -2,17 +2,20 @@ package orderRepo;
 
 import orderRepo.exceptions.InternalServerError;
 import orderRepo.exceptions.OrderNotFoundException;
+import orderRepo.exceptions.ProductNotFoundException;
 import orderRepo.exceptions.UserNotFoundException;
 import orderRepo.model.OrderDetails;
+import orderRepo.model.Product;
 import orderRepo.model.User;
 import orderRepo.repository.OrderRepository;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 @RestController
 class OrderController {
@@ -31,18 +34,44 @@ class OrderController {
         return repository.findAll();
     }
 
+    private void fetchUser(Long userId) {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        String url = "http://localhost:8081/users/" + userId;
+        headers.set("Authorization", "Bearer " + SecurityContextHolder.getContext().getAuthentication().getCredentials().toString());
+        final HttpEntity<String> entity = new HttpEntity<>(headers);
+        restTemplate.exchange(url, HttpMethod.GET, entity, User.class).getBody();
+    }
+
+    private Product fetchProduct(Long productId) {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        String url = "http://localhost:8082/products/" + productId;
+        headers.set("Authorization", "Bearer " + SecurityContextHolder.getContext().getAuthentication().getCredentials().toString());
+        final HttpEntity<String> entity = new HttpEntity<>(headers);
+        return restTemplate.exchange(url, HttpMethod.GET, entity, Product.class).getBody();
+    }
+
     @PostMapping(controllerPath)
     OrderDetails newOrder(@RequestBody OrderDetails order) {
         Long userId = order.getUserId();
-        RestTemplate restTemplate = new RestTemplate();
-        User user = null;
+        AtomicReference<Float> totalAmount = new AtomicReference<>((float) 0);
         try {
-            user = restTemplate.getForEntity("http://localhost:8080/users/" + userId, User.class).getBody();
+            fetchUser(userId);
+
+            order.getOrderItems().forEach((id, quantity) -> {
+                Product product = fetchProduct(id);
+                totalAmount.updateAndGet(v ->  (v + product.getPrice() * quantity));
+            });
+            order.setTotalAmount(totalAmount.get());
             return repository.save(order);
         } catch (HttpClientErrorException e) {
             HttpStatus status = e.getStatusCode();
-            if(status == HttpStatus.NOT_FOUND)
-                throw new UserNotFoundException(userId);
+            if (status == HttpStatus.NOT_FOUND) {
+                if (e.getResponseBodyAsString().contains("user"))
+                    throw new UserNotFoundException(userId);
+                throw new ProductNotFoundException(Long.valueOf(e.getResponseBodyAsString().split(":")[1]));
+            }
             else
                 throw new InternalServerError("Some error occurred");
         } catch (Exception e) {
