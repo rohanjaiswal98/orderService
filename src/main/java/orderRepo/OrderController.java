@@ -93,10 +93,9 @@ class OrderController {
                     order.setUserId(updatedOrder.getUserId());
                     order.setOrderItems(updatedOrder.getOrderItems());
                     order.setShippingAddress(updatedOrder.getShippingAddress());
-                    order.setTotalAmount(updatedOrder.getTotalAmount());
-                    return repository.save(order);
+                    return newOrder(order);
                 })
-                .orElseGet(() -> repository.save(updatedOrder));
+                .orElseGet(() -> newOrder(updatedOrder));
     }
 
     @DeleteMapping(controllerPath + "/{id}")
