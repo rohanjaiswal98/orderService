@@ -100,11 +100,10 @@ class OrderController {
     }
 
     @DeleteMapping(controllerPath + "/{id}")
-    ResponseEntity<OrderDetails> deleteOrder(@PathVariable Long id) {
-        OrderDetails order = repository.findById(id).map(p -> {
+    void deleteOrder(@PathVariable Long id) {
+        repository.findById(id).map(p -> {
             repository.deleteById(id);
             return p;
         }).orElseThrow(() -> new OrderNotFoundException(id));
-        return new ResponseEntity<>(order, HttpStatus.OK);
     }
 }
