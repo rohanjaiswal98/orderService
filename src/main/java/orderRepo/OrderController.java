@@ -8,7 +8,10 @@ import orderRepo.model.OrderDetails;
 import orderRepo.model.Product;
 import orderRepo.model.User;
 import orderRepo.repository.OrderRepository;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
@@ -61,7 +64,7 @@ class OrderController {
 
             order.getOrderItems().forEach((id, quantity) -> {
                 Product product = fetchProduct(id);
-                totalAmount.updateAndGet(v ->  (v + product.getPrice() * quantity));
+                totalAmount.updateAndGet(v -> (v + product.getPrice() * quantity));
             });
             order.setTotalAmount(totalAmount.get());
             return repository.save(order);
@@ -71,8 +74,9 @@ class OrderController {
                 if (e.getResponseBodyAsString().contains("user"))
                     throw new UserNotFoundException(userId);
                 throw new ProductNotFoundException(Long.valueOf(e.getResponseBodyAsString().split(":")[1]));
-            }
-            else
+            } else if (status == HttpStatus.FORBIDDEN) {
+                throw new InternalServerError("Forbidden");
+            } else
                 throw new InternalServerError("Some error occurred");
         } catch (Exception e) {
             throw new InternalServerError("Some error occurred");
