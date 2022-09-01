@@ -40,7 +40,7 @@ class OrderController {
     private void fetchUser(Long userId) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
-        String url = "http://localhost:8081/users/" + userId;
+        String url = "http://localhost:8080/users/" + userId;
         headers.set("Authorization", "Bearer " + SecurityContextHolder.getContext().getAuthentication().getCredentials().toString());
         final HttpEntity<String> entity = new HttpEntity<>(headers);
         restTemplate.exchange(url, HttpMethod.GET, entity, User.class).getBody();

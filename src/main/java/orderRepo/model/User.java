@@ -1,64 +1,84 @@
 package orderRepo.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 import java.util.Objects;
 
+@Entity
 public class User {
 
-	private Long id;
-	private String name;
-	private String role;
+    private @Id
+    @GeneratedValue Long id;
+    private String username;
+    @JsonIgnore
+    private String password;
 
-	User() {}
+    private String role;
 
-	User(String name, String role) {
+    User() {
+    }
 
-		this.name = name;
-		this.role = role;
-	}
 
-	public Long getId() {
-		return this.id;
-	}
+    public User(String username, String password, String role) {
+        this.username = username;
+        this.password = password;
+        this.role = role;
+    }
 
-	public String getName() {
-		return this.name;
-	}
+    public String getRole() {
+        return role;
+    }
 
-	public String getRole() {
-		return this.role;
-	}
+    public void setRole(String role) {
+        this.role = role;
+    }
 
-	public void setId(Long id) {
-		this.id = id;
-	}
+    public Long getId() {
+        return this.id;
+    }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    public String getUsername() {
+        return this.username;
+    }
 
-	public void setRole(String role) {
-		this.role = role;
-	}
+    public String getPassword() {
+        return this.password;
+    }
 
-	@Override
-	public boolean equals(Object o) {
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-		if (this == o)
-			return true;
-		if (!(o instanceof User))
-			return false;
-		User user = (User) o;
-		return Objects.equals(this.id, user.id) && Objects.equals(this.name, user.name)
-				&& Objects.equals(this.role, user.role);
-	}
+    public void setUsername(String username) {
+        this.username = username;
+    }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.id, this.name, this.role);
-	}
+    public void setPassword(String password) {
+        this.password = password;
+    }
 
-	@Override
-	public String toString() {
-		return "User{" + "id=" + this.id + ", name='" + this.name + '\'' + ", role='" + this.role + '\'' + '}';
-	}
+    @Override
+    public boolean equals(Object o) {
+
+        if (this == o)
+            return true;
+        if (!(o instanceof User))
+            return false;
+        User user = (User) o;
+        return Objects.equals(this.id, user.id) && Objects.equals(this.username, user.username)
+                && Objects.equals(this.password, user.password);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.id, this.username, this.password);
+    }
+
+    @Override
+    public String toString() {
+        return "User{" + "id=" + this.id + ", name='" + this.username + '\'' + ", role='" + this.password + '\'' + '}';
+    }
 }
