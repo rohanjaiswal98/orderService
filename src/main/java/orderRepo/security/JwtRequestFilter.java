@@ -24,7 +24,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         final String requestTokenHeader = request.getHeader("Authorization").split(" ")[1];
 
         RestTemplate restTemplate = new RestTemplate();
-        String username = restTemplate.getForObject("http://localhost:8080/validateToken?token=" + requestTokenHeader, String.class);
+        String username = restTemplate.getForObject("http://localhost:8081/validateToken?token=" + requestTokenHeader, String.class);
 
         if (username != null) {
             UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(

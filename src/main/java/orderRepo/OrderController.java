@@ -1,9 +1,6 @@
 package orderRepo;
 
-import orderRepo.exceptions.InternalServerError;
-import orderRepo.exceptions.OrderNotFoundException;
-import orderRepo.exceptions.ProductNotFoundException;
-import orderRepo.exceptions.UserNotFoundException;
+import orderRepo.exceptions.*;
 import orderRepo.model.OrderDetails;
 import orderRepo.model.Product;
 import orderRepo.model.User;
@@ -40,7 +37,7 @@ class OrderController {
     private void fetchUser(Long userId) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
-        String url = "http://localhost:8080/users/" + userId;
+        String url = "http://localhost:8081/users/" + userId;
         headers.set("Authorization", "Bearer " + SecurityContextHolder.getContext().getAuthentication().getCredentials().toString());
         final HttpEntity<String> entity = new HttpEntity<>(headers);
         restTemplate.exchange(url, HttpMethod.GET, entity, User.class).getBody();
@@ -57,10 +54,14 @@ class OrderController {
 
     @PostMapping(controllerPath)
     OrderDetails newOrder(@RequestBody OrderDetails order) {
-        Long userId = order.getUserId();
+        String username = order.getUsername();
         AtomicReference<Float> totalAmount = new AtomicReference<>((float) 0);
         try {
-            fetchUser(userId);
+//            fetchUser(userId);
+            String currentUser = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+
+            if (!currentUser.contentEquals(username))
+                throw new ForbiddenException("Cannot place order for " + username);
 
             order.getOrderItems().forEach((id, quantity) -> {
                 Product product = fetchProduct(id);
@@ -71,13 +72,15 @@ class OrderController {
         } catch (HttpClientErrorException e) {
             HttpStatus status = e.getStatusCode();
             if (status == HttpStatus.NOT_FOUND) {
-                if (e.getResponseBodyAsString().contains("user"))
-                    throw new UserNotFoundException(userId);
+//                if (e.getResponseBodyAsString().contains("user"))
+//                    throw new UserNotFoundException(username);
                 throw new ProductNotFoundException(Long.valueOf(e.getResponseBodyAsString().split(":")[1]));
             } else if (status == HttpStatus.FORBIDDEN) {
-                throw new InternalServerError("Forbidden");
+                throw new ForbiddenException("Forbidden");
             } else
                 throw new InternalServerError("Some error occurred");
+        } catch (ForbiddenException e) {
+            throw e;
         } catch (Exception e) {
             throw new InternalServerError("Some error occurred");
         }
@@ -94,7 +97,7 @@ class OrderController {
 
         return repository.findById(id)
                 .map(order -> {
-                    order.setUserId(updatedOrder.getUserId());
+                    order.setUsername(updatedOrder.getUsername());
                     order.setOrderItems(updatedOrder.getOrderItems());
                     order.setShippingAddress(updatedOrder.getShippingAddress());
                     return newOrder(order);

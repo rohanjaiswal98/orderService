@@ -21,8 +21,8 @@ class LoadDatabase {
 		productIds.put(1L, 2L);
 
 		return args -> {
-			log.info("Preloading " + repository.save(new OrderDetails("Product 1", 99, productIds, 1L)));
-			log.info("Preloading " + repository.save(new OrderDetails("Product 2", 100, productIds, 2L)));
+			log.info("Preloading " + repository.save(new OrderDetails("Product 1", 99, productIds, "customer")));
+			log.info("Preloading " + repository.save(new OrderDetails("Product 2", 100, productIds, "customer")));
 		};
 	}
 }
