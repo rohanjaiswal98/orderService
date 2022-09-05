@@ -1,10 +1,14 @@
 package orderRepo;
 
-import orderRepo.exceptions.*;
+import orderRepo.exceptions.ForbiddenException;
+import orderRepo.exceptions.InternalServerError;
+import orderRepo.exceptions.OrderNotFoundException;
+import orderRepo.exceptions.ProductNotFoundException;
 import orderRepo.model.OrderDetails;
 import orderRepo.model.Product;
-import orderRepo.model.User;
 import orderRepo.repository.OrderRepository;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -18,14 +22,20 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 @RestController
+@Configuration
 class OrderController {
 
     private final static String controllerPath = "/orders";
 
     private final OrderRepository repository;
 
+    private String currentUser;
+
+    private HttpHeaders headers;
+
     OrderController(OrderRepository repository) {
         this.repository = repository;
+        this.headers = new HttpHeaders();
     }
 
 
@@ -34,20 +44,16 @@ class OrderController {
         return repository.findAll();
     }
 
-    private void fetchUser(Long userId) {
-        RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders headers = new HttpHeaders();
-        String url = "http://localhost:8081/users/" + userId;
-        headers.set("Authorization", "Bearer " + SecurityContextHolder.getContext().getAuthentication().getCredentials().toString());
-        final HttpEntity<String> entity = new HttpEntity<>(headers);
-        restTemplate.exchange(url, HttpMethod.GET, entity, User.class).getBody();
+    @Bean
+    public RestTemplate getRestTemplate() {
+        return new RestTemplate();
     }
 
     private Product fetchProduct(Long productId) {
-        RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders headers = new HttpHeaders();
+        RestTemplate restTemplate = getRestTemplate();
         String url = "http://localhost:8082/products/" + productId;
-        headers.set("Authorization", "Bearer " + SecurityContextHolder.getContext().getAuthentication().getCredentials().toString());
+        if (headers.isEmpty())
+            headers.set("Authorization", "Bearer " + SecurityContextHolder.getContext().getAuthentication().getCredentials().toString());
         final HttpEntity<String> entity = new HttpEntity<>(headers);
         return restTemplate.exchange(url, HttpMethod.GET, entity, Product.class).getBody();
     }
@@ -57,8 +63,8 @@ class OrderController {
         String username = order.getUsername();
         AtomicReference<Float> totalAmount = new AtomicReference<>((float) 0);
         try {
-//            fetchUser(userId);
-            String currentUser = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+            if (currentUser == null)
+                currentUser = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
 
             if (!currentUser.contentEquals(username))
                 throw new ForbiddenException("Cannot place order for " + username);
@@ -72,8 +78,6 @@ class OrderController {
         } catch (HttpClientErrorException e) {
             HttpStatus status = e.getStatusCode();
             if (status == HttpStatus.NOT_FOUND) {
-//                if (e.getResponseBodyAsString().contains("user"))
-//                    throw new UserNotFoundException(username);
                 throw new ProductNotFoundException(Long.valueOf(e.getResponseBodyAsString().split(":")[1]));
             } else if (status == HttpStatus.FORBIDDEN) {
                 throw new ForbiddenException("Forbidden");
