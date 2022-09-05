@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -36,16 +35,35 @@ public class OrderControllerTest {
     RestTemplate restTemplate;
 
     @InjectMocks
-    @Spy
     OrderController orderController;
 
     private OrderDetails orderDetails;
     private List<OrderDetails> orderDetailsList;
 
+    private HttpHeaders httpHeaders;
+    private ResponseEntity<Product> responseEntity;
+
+    private Product product;
+
     @BeforeEach
     public void setup() {
         orderDetails = new OrderDetails("TestShippingAddress", 199, Map.of(1L, 1L), "testUser");
         orderDetailsList = Collections.singletonList(orderDetails);
+        httpHeaders = new HttpHeaders();
+        product = new Product("testProductName", "testDescription", 99);
+        responseEntity = ResponseEntity.ok(product);
+
+        httpHeaders.set("Test", "Bearer " + "testToken");
+        ReflectionTestUtils.setField(orderController, "currentUser", "testUser");
+        ReflectionTestUtils.setField(orderController, "headers", httpHeaders);
+
+        when(restTemplate.exchange(anyString(),
+                eq(HttpMethod.GET),
+                ArgumentMatchers.<HttpEntity<?>>any(),
+                ArgumentMatchers.<Class<Product>>any()))
+                .thenReturn(responseEntity);
+        when(orderRepository.save(any())).thenReturn(orderDetails);
+
     }
 
     @Test
@@ -57,19 +75,6 @@ public class OrderControllerTest {
 
     @Test
     void newOrder() {
-        ReflectionTestUtils.setField(orderController, "currentUser", "testUser");
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.set("Authorization", "Bearer " + "testToken");
-        ReflectionTestUtils.setField(orderController, "headers", httpHeaders);
-        Product product = new Product("testProductName", "testDescription", 99);
-        ResponseEntity<Product> responseEntity = ResponseEntity.ok(product);
-        when(restTemplate.exchange(anyString(),
-                eq(HttpMethod.GET),
-                ArgumentMatchers.<HttpEntity<?>>any(),
-                ArgumentMatchers.<Class<Product>>any()))
-                .thenReturn(responseEntity);
-        when(orderController.getRestTemplate()).thenReturn(restTemplate);
-        when(orderRepository.save(any())).thenReturn(orderDetails);
         OrderDetails actualResult = orderController.newOrder(orderDetails);
         assertEquals(actualResult, orderDetails);
     }
@@ -86,19 +91,6 @@ public class OrderControllerTest {
     void updateOrder() {
         Optional<OrderDetails> orderDetailsOptional = Optional.of(orderDetails);
         when(orderRepository.findById(anyLong())).thenReturn(orderDetailsOptional);
-        ReflectionTestUtils.setField(orderController, "currentUser", "testUser");
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.set("Authorization", "Bearer " + "testToken");
-        ReflectionTestUtils.setField(orderController, "headers", httpHeaders);
-        Product product = new Product("testProductName", "testDescription", 99);
-        ResponseEntity<Product> responseEntity = ResponseEntity.ok(product);
-        when(restTemplate.exchange(anyString(),
-                eq(HttpMethod.GET),
-                ArgumentMatchers.<HttpEntity<?>>any(),
-                ArgumentMatchers.<Class<Product>>any()))
-                .thenReturn(responseEntity);
-        when(orderController.getRestTemplate()).thenReturn(restTemplate);
-        when(orderRepository.save(any())).thenReturn(orderDetails);
         OrderDetails actualResult = orderController.updateOrder(orderDetails, 1L);
         assertEquals(actualResult, orderDetails);
 

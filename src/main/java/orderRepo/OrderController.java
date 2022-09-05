@@ -7,6 +7,7 @@ import orderRepo.exceptions.ProductNotFoundException;
 import orderRepo.model.OrderDetails;
 import orderRepo.model.Product;
 import orderRepo.repository.OrderRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpEntity;
@@ -27,17 +28,19 @@ class OrderController {
 
     private final static String controllerPath = "/orders";
 
-    private final OrderRepository repository;
+    @Autowired
+    private OrderRepository repository;
 
     private String currentUser;
 
     private HttpHeaders headers;
 
-    OrderController(OrderRepository repository) {
-        this.repository = repository;
-        this.headers = new HttpHeaders();
-    }
+    @Autowired
+    private RestTemplate restTemplate;
 
+    public OrderController() {
+        headers = new HttpHeaders();
+    }
 
     @GetMapping(controllerPath)
     List<OrderDetails> getOrders() {
@@ -45,14 +48,13 @@ class OrderController {
     }
 
     @Bean
-    public RestTemplate getRestTemplate() {
+    public RestTemplate restTemplate() {
         return new RestTemplate();
     }
 
     private Product fetchProduct(Long productId) {
-        RestTemplate restTemplate = getRestTemplate();
         String url = "http://localhost:8082/products/" + productId;
-        if (headers.isEmpty())
+        if (!headers.containsKey("Test"))
             headers.set("Authorization", "Bearer " + SecurityContextHolder.getContext().getAuthentication().getCredentials().toString());
         final HttpEntity<String> entity = new HttpEntity<>(headers);
         return restTemplate.exchange(url, HttpMethod.GET, entity, Product.class).getBody();
@@ -63,7 +65,7 @@ class OrderController {
         String username = order.getUsername();
         AtomicReference<Float> totalAmount = new AtomicReference<>((float) 0);
         try {
-            if (currentUser == null)
+            if (currentUser == null || SecurityContextHolder.getContext().getAuthentication() != null)
                 currentUser = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
 
             if (!currentUser.contentEquals(username))
