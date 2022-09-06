@@ -1,50 +1,92 @@
 package orderRepo;
 
+import orderRepo.exceptions.ForbiddenException;
 import orderRepo.exceptions.InternalServerError;
 import orderRepo.exceptions.OrderNotFoundException;
-import orderRepo.exceptions.UserNotFoundException;
+import orderRepo.exceptions.ProductNotFoundException;
 import orderRepo.model.OrderDetails;
-import orderRepo.model.User;
+import orderRepo.model.Product;
 import orderRepo.repository.OrderRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 @RestController
+@Configuration
 class OrderController {
 
     private final static String controllerPath = "/orders";
 
-    private final OrderRepository repository;
+    @Autowired
+    private OrderRepository repository;
 
-    OrderController(OrderRepository repository) {
-        this.repository = repository;
+    private String currentUser;
+
+    private HttpHeaders headers;
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    public OrderController() {
+        headers = new HttpHeaders();
     }
-
 
     @GetMapping(controllerPath)
     List<OrderDetails> getOrders() {
         return repository.findAll();
     }
 
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+
+    private Product fetchProduct(Long productId) {
+        String url = "http://localhost:8082/products/" + productId;
+        if (!headers.containsKey("Test"))
+            headers.set("Authorization", "Bearer " + SecurityContextHolder.getContext().getAuthentication().getCredentials().toString());
+        final HttpEntity<String> entity = new HttpEntity<>(headers);
+        return restTemplate.exchange(url, HttpMethod.GET, entity, Product.class).getBody();
+    }
+
     @PostMapping(controllerPath)
     OrderDetails newOrder(@RequestBody OrderDetails order) {
-        Long userId = order.getUserId();
-        RestTemplate restTemplate = new RestTemplate();
-        User user = null;
+        String username = order.getUsername();
+        AtomicReference<Float> totalAmount = new AtomicReference<>((float) 0);
         try {
-            user = restTemplate.getForEntity("http://localhost:8080/users/" + userId, User.class).getBody();
+            if (currentUser == null || SecurityContextHolder.getContext().getAuthentication() != null)
+                currentUser = SecurityContextHolder.getContext().getAuthentication().getPrincipal().toString();
+
+            if (!currentUser.contentEquals(username))
+                throw new ForbiddenException("Cannot place order for " + username);
+
+            order.getOrderItems().forEach((id, quantity) -> {
+                Product product = fetchProduct(id);
+                totalAmount.updateAndGet(v -> (v + product.getPrice() * quantity));
+            });
+            order.setTotalAmount(totalAmount.get());
             return repository.save(order);
         } catch (HttpClientErrorException e) {
             HttpStatus status = e.getStatusCode();
-            if(status == HttpStatus.NOT_FOUND)
-                throw new UserNotFoundException(userId);
-            else
+            if (status == HttpStatus.NOT_FOUND) {
+                throw new ProductNotFoundException(Long.valueOf(e.getResponseBodyAsString().split(":")[1]));
+            } else if (status == HttpStatus.FORBIDDEN) {
+                throw new ForbiddenException("Forbidden");
+            } else
                 throw new InternalServerError("Some error occurred");
+        } catch (ForbiddenException e) {
+            throw e;
         } catch (Exception e) {
             throw new InternalServerError("Some error occurred");
         }
@@ -61,21 +103,19 @@ class OrderController {
 
         return repository.findById(id)
                 .map(order -> {
-                    order.setUserId(updatedOrder.getUserId());
+                    order.setUsername(updatedOrder.getUsername());
                     order.setOrderItems(updatedOrder.getOrderItems());
                     order.setShippingAddress(updatedOrder.getShippingAddress());
-                    order.setTotalAmount(updatedOrder.getTotalAmount());
-                    return repository.save(order);
+                    return newOrder(order);
                 })
-                .orElseGet(() -> repository.save(updatedOrder));
+                .orElseGet(() -> newOrder(updatedOrder));
     }
 
     @DeleteMapping(controllerPath + "/{id}")
-    ResponseEntity<OrderDetails> deleteOrder(@PathVariable Long id) {
-        OrderDetails order = repository.findById(id).map(p -> {
+    void deleteOrder(@PathVariable Long id) {
+        repository.findById(id).map(p -> {
             repository.deleteById(id);
             return p;
         }).orElseThrow(() -> new OrderNotFoundException(id));
-        return new ResponseEntity<>(order, HttpStatus.OK);
     }
 }

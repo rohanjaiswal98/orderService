@@ -12,7 +12,7 @@ public class OrderDetails {
 
     private @Id
     @GeneratedValue Long id;
-    private Long userId;
+    private String username;
     @ElementCollection
     private Map<Long, Long> orderItems;
     private String shippingAddress;
@@ -21,19 +21,19 @@ public class OrderDetails {
     OrderDetails() {
     }
 
-    public OrderDetails(String shippingAddress, float totalAmount, Map<Long, Long> orderItems, Long userId) {
+    public OrderDetails(String shippingAddress, float totalAmount, Map<Long, Long> orderItems, String username) {
         this.shippingAddress = shippingAddress;
         this.totalAmount = totalAmount;
         this.orderItems = orderItems;
-        this.userId = userId;
+        this.username = username;
     }
 
-    public Long getUserId() {
-        return userId;
+    public String getUsername() {
+        return username;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public Map<Long, Long> getOrderItems() {

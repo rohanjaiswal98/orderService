@@ -29,4 +29,18 @@ class OrderNotFoundAdvice {
 	String error(Exception ex) {
 		return ex.getMessage();
 	}
+
+	@ResponseBody
+	@ExceptionHandler(ProductNotFoundException.class)
+	@ResponseStatus(HttpStatus.NOT_FOUND)
+	String productNotFoundHandler(ProductNotFoundException ex) {
+		return ex.getMessage();
+	}
+
+	@ResponseBody
+	@ExceptionHandler(ForbiddenException.class)
+	@ResponseStatus(HttpStatus.FORBIDDEN)
+	String forbidden(ForbiddenException ex) {
+		return ex.getMessage();
+	}
 }
